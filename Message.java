@@ -7,6 +7,7 @@ public class Message implements Serializable{
 		1 = Connect
 		2 = Put
 		3 = Get
+		4 = Success
 	*/
 	private int code; 
 	private String content;
