@@ -38,10 +38,10 @@ public class ConnectionHandler extends Thread {
 					case 1:
 						peer.handleConnect();
 						break;
-					case 2:
+					case 3:
 						//Put
 						break;
-					case 3:
+					case 4:
 						//Get
 						break;
 					default:
@@ -64,6 +64,10 @@ public class ConnectionHandler extends Thread {
 	}
 
 	public synchronized void handleConnect(Socket incomming){
-
+		Message message = Message.Deserialize(buffer); 
+		System.out.println("Received: " + message.getCode() + ": " + message.getContent());
+		
 	}
+
+
 }
