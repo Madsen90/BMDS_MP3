@@ -32,11 +32,11 @@ public class ConnectionHandler extends Thread {
 				}
 
 				Message message = Message.Deserialize(buffer); 
-				System.out.println("Received: " + message.getCode() + ": " + message.getContent());
+				System.out.println("Received: " + message);
 				
 				switch(message.getCode()){
 					case 1:
-						peer.handleConnect();
+						handleConnect(socket, message.getPort());
 						break;
 					case 3:
 						//Put
@@ -63,11 +63,40 @@ public class ConnectionHandler extends Thread {
 		} 
 	}
 
-	public synchronized void handleConnect(Socket incomming){
-		Message message = Message.Deserialize(buffer); 
-		System.out.println("Received: " + message.getCode() + ": " + message.getContent());
-		
+	private void handleConnect(Socket incommingSocket, int incommingListenPort){
+		if(peer.getLink(false) == null){
+			peer.setLink(false, incommingSocket);
+			peer.leftListenPort = incommingListenPort;
+			try{
+				DataOutputStream out = new DataOutputStream(incommingSocket.getOutputStream());
+				Message m = new Message(2, "Success", peer.leftListenPort);
+				out.write(m.Serialize());		
+			}catch(Exception e){
+				System.out.println("Fejl her: " + e.toString());
+			}
+
+			peer.printInfo();
+		}else{
+
+			try{
+				DataOutputStream out = new DataOutputStream(incommingSocket.getOutputStream());
+				DataInputStream in = new DataInputStream(socket.getInputStream());
+				Socket s = peer.getLink(true);
+				Message m = new Message(1, s.getInetAddress().getHostAddress(), peer.leftListenPort);
+				out.write(m.Serialize());
+
+				byte[] buffer = new byte[socket.getReceiveBufferSize()];	
+				int size = in.read(buffer);
+
+				Message m2 = Message.Deserialize(buffer);
+				if(m2.getCode() == 2){
+					rightLink = leftLink;
+				}
+
+			}catch(Exception e){
+				System.out.println("Fejl her: " + e.toString());
+			}
+			peer.printInfo();
+		}
 	}
-
-
 }

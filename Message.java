@@ -4,7 +4,7 @@ import java.io.*;
 public class Message implements Serializable{
 	/*
 		-1 = Error
-		1 = RequestConnect
+		1 = Connecting To Network
 		2 = ConnectionEstablished
 		3 = Put
 		4 = Get
@@ -12,10 +12,20 @@ public class Message implements Serializable{
 	*/
 	private int code; 
 	private String content;
+	private int port = -1;
 
 	public Message(int code, String content){
 		this.code = code;
 		this.content = content;
+	}
+
+	public Message(int code, String content, int port){
+		this(code, content);
+		this.port = port;
+	}
+
+	public int getPort(){
+		return port;
 	}
 
 	public int getCode(){
@@ -27,7 +37,6 @@ public class Message implements Serializable{
 	}
 
 	public byte[] Serialize(){
-      
 		try{
 	      	byte[] bytes = null;
 	        ByteArrayOutputStream b = new ByteArrayOutputStream();
@@ -53,6 +62,11 @@ public class Message implements Serializable{
 			System.out.println(e2);
 			return null;
 		}
+	}
+
+	@Override
+	public String toString(){
+		return code + ": " + content + " - " + port;
 	}
 
 	public static void main(String [] args)
