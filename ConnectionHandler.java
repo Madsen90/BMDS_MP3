@@ -36,7 +36,7 @@ public class ConnectionHandler extends Thread {
 				
 				switch(message.getCode()){
 					case 1:
-						//Connect
+						peer.handleConnect();
 						break;
 					case 2:
 						//Put
@@ -61,5 +61,9 @@ public class ConnectionHandler extends Thread {
 
 			System.err.println("TCP: IO Error: " + ex.getMessage());
 		} 
+	}
+
+	public synchronized void handleConnect(Socket incomming){
+
 	}
 }

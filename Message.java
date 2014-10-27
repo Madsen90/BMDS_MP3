@@ -4,10 +4,11 @@ import java.io.*;
 public class Message implements Serializable{
 	/*
 		-1 = Error
-		1 = Connect
-		2 = Put
-		3 = Get
-		4 = Success
+		1 = RequestConnect
+		2 = ConnectionEstablished
+		3 = Put
+		4 = Get
+		5 = Success
 	*/
 	private int code; 
 	private String content;
