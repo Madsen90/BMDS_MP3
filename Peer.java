@@ -2,10 +2,12 @@ import java.net.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 
 public class Peer{
 	private Socket leftLink, rightLink;
 	public int leftListenPort = -1, rightListenPort = -1;
+	private HashMap<Integer,String> data = new HashMap<>();
 
 	//Starting new network constructor
 	public Peer	(int listenPort) {
