@@ -5,16 +5,20 @@ import java.io.IOException;
 
 public class Peer{
 	private Socket leftLink, rightLink;
-	public int leftListenPort = -1, rightListenPort = -1;
+	public int leftListenPort = -1, rightListenPort = -1, listenPort;
+	public boolean newNetwork;
 
 	//Starting new network constructor
 	public Peer	(int listenPort) {
+		newNetwork = true;
+		this.listenPort = listenPort;
 		beginListening(listenPort);
 		printInfo();
 	}
 
 	//Connecting to existing network
 	public Peer	(int listenPort, String connectAddress, int connectPort) {
+		newNetwork = false;
 		DataOutputStream out;
 		DataInputStream in;
 		
@@ -36,14 +40,25 @@ public class Peer{
 
 			if(m.getCode() == 1){
 				Socket rightSocket = new Socket(InetAddress.getByName(m.getContent()), m.getPort());
+				DataOutputStream joinOut = new DataOutputStream(rightSocket.getOutputStream());
+
+				Message joinMessage = new Message(2, "Joined network", listenPort);
+				joinOut.write(joinMessage.Serialize());
+				
 				Message messageSucces = new Message(2, "Connection Established");
 				out.write(messageSucces.Serialize());
 				
 				leftLink = leftSocket;
+				leftListenPort = connectPort;
 				rightLink = rightSocket;
+				rightListenPort = m.getPort();
+				
+
 			}else if(m.getCode() == 2){
 				leftListenPort = connectPort;
 				leftLink = leftSocket;
+				rightListenPort = connectPort;
+				rightLink = leftSocket;
 			}
 		} catch (IOException ex) {
 			System.err.println("TCP: IO Error, connection lost: " + ex.getMessage());
