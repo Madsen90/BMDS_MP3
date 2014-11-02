@@ -20,6 +20,7 @@ public class SocketHandler extends Thread {
 				System.out.println("Listening on: "+port);
 				Socket source = serverSocket.accept();
 				socketHandlerCallback.action(peer, source);
+                                
 	      	} catch (IOException ex) {
 	    	    System.err.println("TCP: IdO Error:" + ex.getMessage());
 	    	}

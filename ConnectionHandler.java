@@ -4,9 +4,10 @@ import java.net.*;
 import java.io.IOException;
 
 public class ConnectionHandler extends Thread {
-	private Peer peer;
-	private Socket socket;
+	private final Peer peer;
+	private final Socket socket;
 
+        
 	public ConnectionHandler(Peer peer, Socket socket){
 		this.peer = peer;
 		this.socket = socket;
@@ -36,10 +37,10 @@ public class ConnectionHandler extends Thread {
 				
 				switch(message.getCode()){
 					case 1:
-						handleConnect(socket, message.getPort());
+						handleConnect(socket);
 						break;
 					case 2:
-						peerJoined(socket, message.getPort());
+						peerJoined(socket);
 						break;
 					case 3:
 						//Put
@@ -47,37 +48,47 @@ public class ConnectionHandler extends Thread {
 					case 4:
 						//Get
 						break;
+                                        case 6 : //heartbeat
+                                            
+                                        case 7 : //panic
+                                                System.out.println("received panic message: " + message.getContent());
+                                                panic(message);
 					default:
 						//Eventuel fejlhåndtering
 						break;
 				}
-
 			}
 		} catch (IOException ex) {
+                        if(socket == peer.getLink(true)){ //if it is the left socket that died
+                            System.out.println("My left buddy, "+ socket.getPort()+", died. I'm panicking!!");
+                            panic(new Message(7, String.valueOf(socket.getPort()), socket));
+                        } else if(socket == peer.getLink(false)){ //if the right socket died
+                            System.out.println("My right buddy, "+ socket.getPort()+", died. I'm keeping it coolio.");
+                        }
 			if(in != null){
 				try{
+                                    System.out.println("closing socket");
 					socket.close();
 				}catch(IOException e){ 
 					System.out.println("Couldn't close socket: "+e);
 				}
 			}
-
-			System.err.println("TCP: IO Error: " + ex.getMessage());
+			System.err.println("TCP  : IO Error: " + ex.getMessage());
 		} 
 	}
 
-	private void handleConnect(Socket incommingSocket, int incommingListenPort){
+	private void handleConnect(Socket incommingSocket){
 		if(peer.newNetwork){
 			peer.setLink(false, incommingSocket);
-			peer.leftListenPort = incommingListenPort;
+			//peer.leftListenPort = incommingListenPort;
 			peer.setLink(true, incommingSocket);
-			peer.rightListenPort = incommingListenPort;
+			//peer.rightListenPort = incommingListenPort;
 			
 			try{
 				DataOutputStream out = new DataOutputStream(incommingSocket.getOutputStream());
-				Message m = new Message(2, "Success", peer.leftListenPort);
+				Message m = new Message(2, "Success", peer.getLink(true).getPort());
 				out.write(m.Serialize());		
-			}catch(Exception e){
+			}catch(IOException e){
 				System.out.println("Fejl her: " + e.toString());
 			}
 
@@ -90,7 +101,7 @@ public class ConnectionHandler extends Thread {
 				DataInputStream in = new DataInputStream(socket.getInputStream());
 				
 				Socket s = peer.getLink(false);
-				Message m = new Message(1, s.getInetAddress().getHostAddress(), peer.rightListenPort);
+				Message m = new Message(1, s.getInetAddress().getHostAddress(), peer.getLink(false).getPort());
 				out.write(m.Serialize());
 
 				byte[] buffer = new byte[socket.getReceiveBufferSize()];	
@@ -100,20 +111,54 @@ public class ConnectionHandler extends Thread {
 				
 				if(m2.getCode() == 2){
 					peer.setLink(false, incommingSocket);
-					peer.rightListenPort = incommingListenPort;
+					//peer.rightListenPort = incommingListenPort;
 				}
 
-			}catch(Exception e){
+			}catch(IOException e){
 				System.out.println("Fejl her: " + e.toString());
 			}
 			peer.printInfo();
 		}
 	}
 
-	private void peerJoined(Socket incommingSocket, int incommingListenPort){
+	private void peerJoined(Socket incommingSocket){
 		peer.setLink(true, incommingSocket);
-		peer.leftListenPort = incommingListenPort;
+		//peer.leftListenPort = incommingListenPort;
 
 		peer.printInfo();
 	}
+        
+        //Called if the Peer loses connection to one of its connected peers
+        //if left is missing. Panic! If right is missing, wait.
+        private void panic(Message message) {
+            //skal være en socket, lige nu er det kun porten!!
+            int missing= Integer.parseInt(message.getContent());
+            
+            Socket to = peer.getLink(false); 
+            Socket sender = message.getSender(); 
+            
+            if(missing == to.getPort()) {
+                try{
+                    //Give the peer missing a left buddy, you as a left buddy.
+                    DataOutputStream out = new DataOutputStream(message.getSender().getOutputStream());
+                    Message m = new Message(2, "I'm your new left friend.");
+                    out.write(m.Serialize());
+                    peer.setLink(false, to);
+                }
+                catch(IOException e) {
+                    System.out.println("Could not make the new connection between " + sender + " and " + peer.listenPort);
+                } 
+            }
+            else {
+                try{
+                    DataOutputStream out = new DataOutputStream(peer.getLink(false).getOutputStream());
+                    Message m = new Message(7, message.getContent());
+                    out.write(m.Serialize());		
+		}catch(IOException e){
+                    System.out.println("I was unable to pass on a panic signal from : " + message.getSender());
+                }
+            }
+        }
+        
+        
 }
