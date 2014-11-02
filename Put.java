@@ -10,8 +10,8 @@ public class Put{
             {
                 throw new ArrayIndexOutOfBoundsException();
             }
-            int peerPort = Integer.parseInt(args[0]);
-            InetAddress peerAddress = InetAddress.getByName(args[1]);
+            int peerPort = Integer.parseInt(args[1]);
+            InetAddress peerAddress = InetAddress.getByName(args[0]);
             int key = Integer.parseInt(args[2]);
             String value = args[3];
             new Put(peerPort, peerAddress, key, value);

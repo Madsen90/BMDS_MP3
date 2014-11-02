@@ -6,17 +6,24 @@ import java.util.HashMap;
 
 public class Peer{
 	private Socket leftLink, rightLink;
-	public int leftListenPort = -1, rightListenPort = -1;
-	private HashMap<Integer,String> data = new HashMap<>();
+        //er det ikke redundant at have leftListenPort som int når den er i leftLink.getPort
+	//public int leftListenPort = -1, rightListenPort = -1, 
+        public int listenPort;
+	public boolean newNetwork;
+        private int pulse;
 
 	//Starting new network constructor
 	public Peer	(int listenPort) {
+		newNetwork = true;
+		this.listenPort = listenPort;
 		beginListening(listenPort);
 		printInfo();
+                
 	}
 
 	//Connecting to existing network
-	public Peer	(int listenPort, String connectAddress, int connectPort) {
+	public Peer(int listenPort, String connectAddress, int connectPort) {
+		newNetwork = false;
 		DataOutputStream out;
 		DataInputStream in;
 		
@@ -38,14 +45,25 @@ public class Peer{
 
 			if(m.getCode() == 1){
 				Socket rightSocket = new Socket(InetAddress.getByName(m.getContent()), m.getPort());
+				DataOutputStream joinOut = new DataOutputStream(rightSocket.getOutputStream());
+
+				Message joinMessage = new Message(2, "Joined network", listenPort);
+				joinOut.write(joinMessage.Serialize());
+				
 				Message messageSucces = new Message(2, "Connection Established");
 				out.write(messageSucces.Serialize());
 				
 				leftLink = leftSocket;
+				//leftListenPort = connectPort;
 				rightLink = rightSocket;
+				//rightListenPort = m.getPort();
+				
+
 			}else if(m.getCode() == 2){
-				leftListenPort = connectPort;
+				//leftListenPort = connectPort;
 				leftLink = leftSocket;
+				//rightListenPort = connectPort;
+				rightLink = leftSocket;
 			}
 		} catch (IOException ex) {
 			System.err.println("TCP: IO Error, connection lost: " + ex.getMessage());
@@ -57,8 +75,11 @@ public class Peer{
 	}
 	
 	public void printInfo(){
-		System.out.println("leftListen:" + leftListenPort);
-		System.out.println("rightListen:" + rightListenPort);
+            if(leftLink !=null)
+		System.out.println("leftListen: " + leftLink.getPort());
+            
+            if(rightLink !=null)
+		System.out.println("rightListen: " + rightLink.getPort());
 	}
 
 	public void beginListening(int listenPort){
@@ -109,4 +130,14 @@ public class Peer{
         	}
 	    }
 	}
+        
+        
+    
+
+    public int getPulse() {
+        return pulse;
+    }
+
+        
+        
 }

@@ -1,5 +1,6 @@
 import java.io.Serializable;
 import java.io.*;
+import java.net.Socket;
 
 public class Message implements Serializable{
 	/*
@@ -9,9 +10,12 @@ public class Message implements Serializable{
 		3 = Put
 		4 = Get
 		5 = Success
+                6 = Heartbeat
+                7 = Panic
 	*/
 	private int code; 
 	private String content;
+        private Socket sender;
 	private int port = -1;
 
 	public Message(int code, String content){
@@ -23,6 +27,13 @@ public class Message implements Serializable{
 		this(code, content);
 		this.port = port;
 	}
+        
+        
+	public Message(int code, String content, Socket sender){
+		this.code = code;
+		this.content = content;
+		this.sender = sender;
+	}
 
 	public int getPort(){
 		return port;
@@ -31,6 +42,10 @@ public class Message implements Serializable{
 	public int getCode(){
 		return code;
 	}
+        
+        public Socket getSender() {
+            return sender;
+        }
 
 	public String getContent(){
 		return content;
