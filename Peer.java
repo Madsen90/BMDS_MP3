@@ -16,11 +16,11 @@ public class Peer {
     public HashMap<Integer, String> backup = new HashMap<>();
     public HashSet<Integer> log = new HashSet<>();
     private int pulse;
+    boolean isSending = false;
 
     //Starting new network constructor
     public Peer(int listenPort) {
-
-        messages.add(new Message(CodeType.Success, "Please virk"));
+        messages.add(new Message(CodeType.Success, "Please virker"));
 
         startMessageLoop();
 
@@ -104,27 +104,46 @@ public class Peer {
 
     private void startMessageLoop(){
         System.out.println("Message loop startet");
-        while(true){
-            boolean isSending = false;
+        Socket socket = null;
+        try{
+            socket = new Socket("localhost", 1001);
+        
+        }catch(Exception e){
 
+        }
+        
+        MessageSender messageSender = null;
+
+        while(true){
             if(!isSending){
                 if(!messages.isEmpty()){
+                    System.out.println("Creating new message");
                     Message m = messages.getFirst();
-                    new MessageSender(m);
+                    isSending = true;
+                    messageSender = new MessageSender(new MessageSenderCallback(){
+                        public void action(){
+                            finnishedSending();
 
-
+                        }
+                    }, socket, m);
                 }
             }else {
-
+                System.out.println("Still trying to send");
+                if(messageSender != null){
+                    messageSender.trySend = false;
+                }
             }
 
-            
             try{
-                Thread.sleep(200);
+                Thread.sleep(1000);
             }catch(Exception e){
 
             }
         }
+    }
+
+    public synchronized void finnishedSending(){
+        isSending = false;
     }
 
     public int getListenPort(boolean left){
