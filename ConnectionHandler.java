@@ -49,10 +49,10 @@ public class ConnectionHandler extends Thread {
                         }
 
                     } 
-                    continue; // TODO RESPOND TO GET
+                    continue; 
 
                 }
-                peer.log.add(message.hashCode());
+                peer.addToLog(message.hashCode());
 
                 switch (message.getCode()) {
                     case Connecting:
@@ -164,7 +164,7 @@ public class ConnectionHandler extends Thread {
         System.out.println("Put " + message.getContent() + " at " + message.getKey());
 
         Message deletemessage = new Message(CodeType.Delete, message.getContent(), peer.listenPort, message.getKey());
-        peer.log.add(deletemessage.hashCode());
+        peer.addToLog(deletemessage.hashCode());
         delete(deletemessage,false);
 
         try{
@@ -176,7 +176,7 @@ public class ConnectionHandler extends Thread {
     }
 
     private void get(Message message) {
-        if (peer.data.containsKey(message.getKey())) { // TODO check if exists in backup
+        if (peer.data.containsKey(message.getKey())) { 
             System.out.println("Data here. Returning...");
             try {
                 Message getmessage = new Message(CodeType.Success, peer.data.get(message.getKey()));

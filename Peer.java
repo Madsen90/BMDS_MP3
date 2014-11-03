@@ -3,7 +3,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.PriorityQueue;
 import java.util.LinkedList;
 
 public class Peer {
@@ -14,7 +14,7 @@ public class Peer {
     public boolean newNetwork;
     public HashMap<Integer, String> data = new HashMap<>();
     public HashMap<Integer, String> backup = new HashMap<>();
-    public HashSet<Integer> log = new HashSet<>();
+    public PriorityQueue<Integer> log = new PriorityQueue<>();
     private int pulse;
     boolean isSending = false;
 
@@ -122,7 +122,7 @@ public class Peer {
                     isSending = true;
                     messageSender = new MessageSender(new MessageSenderCallback(){
                         public void action(){
-                            finnishedSending();
+                            finishedSending();
 
                         }
                     }, socket, m);
@@ -142,8 +142,17 @@ public class Peer {
         }
     }
 
-    public synchronized void finnishedSending(){
+    public synchronized void finishedSending(){
         isSending = false;
+    }
+
+    public synchronized void addToLog(Integer x) {
+        if(log.size() > 100000) {
+            for(int i = 100000; i> 10000;i--){
+                log.poll();
+            }
+        }
+        log.add(x);
     }
 
     public int getListenPort(boolean left){
