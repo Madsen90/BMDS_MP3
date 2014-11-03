@@ -49,7 +49,7 @@ public class ConnectionHandler extends Thread {
                         }
 
                     } 
-                    continue; // TODO RESPOND TO GET
+                    continue; 
 
                 }
                 peer.log.add(message.hashCode());
