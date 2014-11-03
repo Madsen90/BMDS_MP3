@@ -1,57 +1,43 @@
 import java.io.Serializable;
 import java.io.*;
 import java.net.Socket;
+import java.util.Date;
 
 public class Message implements Serializable{
-	/*
-		-1 = Error
-		1 = Connecting To Network
-		2 = ConnectionEstablished
-		3 = Put
-		4 = Get
-		5 = Success
-                6 = Heartbeat
-                7 = Panic
-		8 = Backup
-	*/
-        public enum CodeType{ // Unused, but could be useful
-            Error, Connecting, ConnectionEstablished, 
-            Put, Get, Success, Heartbeat, Panic, Backup
-        }
-        public static final String SEPERATOR = "#####";
-	private int code; 
-	private String content;
-        private Socket sender;
-	private int port = -1;
 
-	public Message(int code, String content){
+    public static final String SEPERATOR = "#####";
+	private CodeType code; 
+	private String content;
+	private int key = -1;
+	private int port = -1;
+	private Date time = new Date();
+
+	public Message(CodeType code, String content){
 		this.code = code;
 		this.content = content;
 	}
 
-	public Message(int code, String content, int port){
+	public Message(CodeType code, String content, int port){
 		this(code, content);
 		this.port = port;
 	}
-        
-        
-	public Message(int code, String content, Socket sender){
-		this.code = code;
-		this.content = content;
-		this.sender = sender;
+
+	public Message(CodeType code, String content, int port, int key){
+		this(code, content, port);
+		this.key = key;
 	}
 
 	public int getPort(){
 		return port;
 	}
 
-	public int getCode(){
+	public int getKey(){
+		return key;
+	}
+
+	public CodeType getCode(){
 		return code;
 	}
-        
-        public Socket getSender() {
-            return sender;
-        }
 
 	public String getContent(){
 		return content;
@@ -70,6 +56,11 @@ public class Message implements Serializable{
 	      	return null;
 	    }
 	}
+
+	@Override
+    public int hashCode() {
+        return key * port * content.hashCode() * time.hashCode();
+    }
 
 	public static Message Deserialize(byte[] b){
 		try{	
@@ -92,7 +83,7 @@ public class Message implements Serializable{
 
 	public static void main(String [] args)
    	{
-		Message mes = new Message(2, "Works!");
+		Message mes = new Message(CodeType.Success, "Works!");
 		byte[] b = mes.Serialize();
 		Message mes2 = Message.Deserialize(b);
 		System.out.println(mes2.getCode() + ": " + mes.getContent());

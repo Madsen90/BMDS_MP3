@@ -29,20 +29,19 @@ public class Get {
     public Get(int peerPort, InetAddress peerAddress, int key) {
         try (ServerSocket serverSocket = new ServerSocket()) {
             serverSocket.bind(null);
-            String message = key + Message.SEPERATOR
-                    + serverSocket.getLocalPort();
-
-            System.out.println(message);
-            Message getmessage = new Message(4, message); //4 is code for get
-            byte[] messageInBytes = getmessage.Serialize();
 
             try {
                 Socket peerSocket = new Socket(peerAddress, peerPort);
+                Message getmessage = new Message(CodeType.Get, 
+                    peerSocket.getLocalAddress().getHostAddress(), serverSocket.getLocalPort(), key);
+                byte[] messageInBytes = getmessage.Serialize();
+
                 peerSocket.getOutputStream().write(messageInBytes);
             } catch (IOException e) {
                 System.out.println("failed to send get request: " + e.getMessage());
             }
             System.out.println("Listening on: " + serverSocket.getLocalPort());
+
             MessageListener mL = new MessageListener(serverSocket.accept());
             mL.start();
         } catch (IOException ex) {

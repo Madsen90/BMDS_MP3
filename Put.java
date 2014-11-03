@@ -26,8 +26,7 @@ public class Put {
     }
 
     public Put(int peerPort, InetAddress peerAddress, int key, String value) {
-        String putString = key + Message.SEPERATOR + value;
-        Message putMessage = new Message(3, putString); //3 is put code
+        Message putMessage = new Message(CodeType.Put, value, 0, key); //3 is put code
         byte[] messageInBytes = putMessage.Serialize();
 
         try {

@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class Peer {
 
@@ -33,11 +34,12 @@ public class Peer {
     }
 
     private Socket leftLink, rightLink;
-        //er det ikke redundant at have leftListenPort som int når den er i leftLink.getPort
-    //public int leftListenPort = -1, rightListenPort = -1, 
+    private int leftListenPort = -1, rightListenPort = -1; 
     public int listenPort;
     public boolean newNetwork;
     public HashMap<Integer, String> data = new HashMap<>();
+    public HashMap<Integer, String> backup = new HashMap<>();
+    public HashSet<Integer> log = new HashSet<>();
     private int pulse;
 
     //Starting new network constructor
@@ -52,6 +54,7 @@ public class Peer {
     //Connecting to existing network
     public Peer(int listenPort, String connectAddress, int connectPort) {
         newNetwork = false;
+        this.listenPort = listenPort;
         DataOutputStream out;
         DataInputStream in;
 
@@ -62,36 +65,33 @@ public class Peer {
             out = new DataOutputStream(leftSocket.getOutputStream());
             in = new DataInputStream(leftSocket.getInputStream());
 
-            Message message = new Message(1, "Trying to connect", listenPort);
+            Message message = new Message(CodeType.Connecting, "Trying to connect", listenPort);
             out.write(message.Serialize());
 
             byte[] buffer = new byte[leftSocket.getReceiveBufferSize()];
             int size = in.read(buffer);
 
             Message m = Message.Deserialize(buffer);
-            System.out.println("Modtaget: " + m);
+            System.out.println("Received: " + m);
 
-            if (m.getCode() == 1) {
+            if (m.getCode() == CodeType.Connecting) {
                 Socket rightSocket = new Socket(InetAddress.getByName(m.getContent()), m.getPort());
                 DataOutputStream joinOut = new DataOutputStream(rightSocket.getOutputStream());
 
-                Message joinMessage = new Message(2, "Joined network", listenPort);
+                Message joinMessage = new Message(CodeType.ConnectionEstablished, "Joined network", listenPort);
                 joinOut.write(joinMessage.Serialize());
 
-                Message messageSucces = new Message(2, "Connection Established");
-                out.write(messageSucces.Serialize());
+                //Message messageSucces = new Message(CodeType.ConnectionEstablished, "Connection Established");
+                //out.write(messageSucces.Serialize());
 
-                leftLink = leftSocket;
-                //leftListenPort = connectPort;
-                rightLink = rightSocket;
-				//rightListenPort = m.getPort();
-
-            } else if (m.getCode() == 2) {
-                //leftListenPort = connectPort;
-                leftLink = leftSocket;
-                //rightListenPort = connectPort;
-                rightLink = leftSocket;
+                setLink(true, leftSocket, connectPort);
+                setLink(false, rightSocket, m.getPort());
+                new ConnectionHandler(this, rightSocket).start();
+            } else if (m.getCode() == CodeType.ConnectionEstablished) {
+                setLink(true, leftSocket, connectPort);
+                setLink(false, leftSocket, connectPort);
             }
+            new ConnectionHandler(this, leftSocket).start();
         } catch (IOException ex) {
             System.err.println("TCP: IO Error, connection lost: " + ex.getMessage());
         } finally {
@@ -103,11 +103,11 @@ public class Peer {
 
     public void printInfo() {
         if (leftLink != null) {
-            System.out.println("leftListen: " + leftLink.getPort());
+            System.out.println("leftListen: " + leftLink.getPort() + " " + leftListenPort);
         }
 
         if (rightLink != null) {
-            System.out.println("rightListen: " + rightLink.getPort());
+            System.out.println("rightListen: " + rightLink.getPort() + " " + rightListenPort);
         }
     }
 
@@ -121,14 +121,20 @@ public class Peer {
         connectionListener.start();
     }
 
+    public int getListenPort(boolean left){
+        return (left) ? leftListenPort : rightListenPort;
+    }
+
     public Socket getLink(boolean left) {
         return (left) ? leftLink : rightLink;
     }
 
-    public void setLink(boolean left, Socket s) {
+    public void setLink(boolean left, Socket s, int listenPort) {
         if (left) {
+            leftListenPort = listenPort;
             leftLink = s;
         } else {
+            rightListenPort = listenPort;
             rightLink = s;
         }
     }

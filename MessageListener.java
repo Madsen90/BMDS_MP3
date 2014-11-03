@@ -32,10 +32,10 @@ public class MessageListener extends Thread
                 Message message = Message.Deserialize(buffer);
 
                 switch(message.getCode()){
-                    case -1 : 
+                    case Error : 
                         System.out.println("Error from peer - most likely no result in cloud");
                         break;
-                    case 5 : 
+                    case Success : 
                         System.out.println("Success! Value of key is: " + message.getContent());
                         break;
                     default :
