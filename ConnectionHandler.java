@@ -5,9 +5,8 @@ import java.net.*;
 import java.io.IOException;
 
 public class ConnectionHandler extends Thread {
-
-    private final Peer peer; // Peer running ConnectionHandler
-    private final Socket socket; // A socket the Peer receives messages on
+    private final Peer peer;        // Peer running ConnectionHandler
+    private final Socket socket;    // A socket the Peer receives messages on
 
     public static final boolean direction = true; // The direction of get, backup, delete, and panic in. Everything.
 
@@ -38,7 +37,20 @@ public class ConnectionHandler extends Thread {
                 System.out.println("Received: " + message);
 
                 if(peer.log.contains(message.hashCode())){
+                    if(message.getCode() == CodeType.Get) {
+
+                        System.out.println("Get not found. Returning...");
+                        try {
+                            Message returnMessage = new Message(CodeType.Success, "No put of value: "+ message.getKey() +" found");
+                            Socket peerSocket = new Socket(InetAddress.getByName(message.getContent()), message.getPort());
+                            peerSocket.getOutputStream().write(returnMessage.Serialize());
+                        } catch (IOException e) {
+                            System.out.println("failed to respond to get request: " + e.getMessage());
+                        }
+
+                    } 
                     continue; // TODO RESPOND TO GET
+
                 }
                 peer.log.add(message.hashCode());
 

@@ -1,38 +1,13 @@
-
 import java.net.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 
 public class Peer {
-
-    public static void main(String[] args) {
-        int listenPort = 0;
-
-        try {
-            listenPort = Integer.parseInt(args[0]);
-        } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
-            System.out.println("Parameters must be given at least a listen port, or a listen and connect port & -address E.g.");
-            System.out.println("java Peer 8080");
-            System.out.println("java Peer 8080 localhost 8081");
-        }
-
-        if (args.length == 1) {
-            System.out.println("Starting new P2P network");
-            new Peer(listenPort);
-        } else {
-            try {
-                String address = args[1];
-                int connectPort = Integer.parseInt(args[2]);
-                new Peer(listenPort, address, connectPort);
-            } catch (Exception e) {
-                System.out.println("More errors");
-            }
-        }
-    }
-
+    private LinkedList<Message> messages = new LinkedList<>();
     private Socket leftLink, rightLink;
     private int leftListenPort = -1, rightListenPort = -1; 
     public int listenPort;
@@ -44,10 +19,15 @@ public class Peer {
 
     //Starting new network constructor
     public Peer(int listenPort) {
-        newNetwork = true;
+
+        messages.add(new Message(CodeType.Success, "Please virk"));
+
+        startMessageLoop();
+
+/*        newNetwork = true;
         this.listenPort = listenPort;
         beginListening(listenPort);
-        printInfo();
+        printInfo();*/
 
     }
 
@@ -119,6 +99,32 @@ public class Peer {
         });
 
         connectionListener.start();
+        startMessageLoop();
+    }
+
+    private void startMessageLoop(){
+        System.out.println("Message loop startet");
+        while(true){
+            boolean isSending = false;
+
+            if(!isSending){
+                if(!messages.isEmpty()){
+                    Message m = messages.getFirst();
+                    new MessageSender(m);
+
+
+                }
+            }else {
+
+            }
+
+            
+            try{
+                Thread.sleep(200);
+            }catch(Exception e){
+
+            }
+        }
     }
 
     public int getListenPort(boolean left){
@@ -139,7 +145,37 @@ public class Peer {
         }
     }
 
+    public synchronized void addMessage(Message message){
+        messages.add(message);
+    }
+
     public int getPulse() {
         return pulse;
+    }
+
+    public static void main(String[] args) {
+        new Peer(-1);
+        /*int listenPort = 0;
+
+        try {
+            listenPort = Integer.parseInt(args[0]);
+        } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
+            System.out.println("Parameters must be given at least a listen port, or a listen and connect port & -address E.g.");
+            System.out.println("java Peer 8080");
+            System.out.println("java Peer 8080 localhost 8081");
+        }
+
+        if (args.length == 1) {
+            System.out.println("Starting new P2P network");
+            new Peer(listenPort);
+        } else {
+            try {
+                String address = args[1];
+                int connectPort = Integer.parseInt(args[2]);
+                new Peer(listenPort, address, connectPort);
+            } catch (Exception e) {
+                System.out.println("More errors");
+            }
+        }*/
     }
 }

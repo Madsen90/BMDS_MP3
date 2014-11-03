@@ -1,4 +1,4 @@
-import java.io.DataOutputStream;
+/*import java.io.DataOutputStream;
 import java.net.*;
 import java.io.IOException;
 
@@ -23,14 +23,14 @@ public class Heartbeat extends Thread {
                 } catch (Exception e) {
                     
                 }
-	}
+	}*/
         
         /*
         every pulse milliseconds the Peer sends a heartbeat to its connected
         peers, if it misses two heartbeats, the other peers will declare it 
         as dead.
         */
-        private void heartbeat(Socket socket) {
+/*        private void heartbeat(Socket socket) {
                 try{
                     DataOutputStream out = new DataOutputStream(socket.getOutputStream());
                     Message m = new Message(6, peer.listenPort + " is still alive");
@@ -40,4 +40,4 @@ public class Heartbeat extends Thread {
                     System.out.println("something bad happened, I might be dead.");
                 }
         }
-}
+}*/
