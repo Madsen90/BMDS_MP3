@@ -36,7 +36,7 @@ public class ConnectionHandler extends Thread {
                 Message message = Message.Deserialize(buffer);
                 System.out.println("Received: " + message);
 
-                if(peer.log.contains(message.hashCode())){
+                if(peer.logContains(message.hashCode())){
                     if(message.getCode() == CodeType.Get) {
 
                         System.out.println("Get not found. Returning...");
@@ -122,6 +122,7 @@ public class ConnectionHandler extends Thread {
             System.err.println("Connection Closed: " + ex.getMessage());
         }
     }
+
     private void backup(Message message){
         int key = message.getKey();
 
@@ -188,7 +189,9 @@ public class ConnectionHandler extends Thread {
         } else {
             System.out.println("Data not here. Forwarding..");
             try {
+                if (peer.getListenPort(direction) > 0){
                 peer.getLink(direction).getOutputStream().write(message.Serialize());
+            }
             } catch (IOException e) {
                 System.out.println("failed to forward get request: " + e.getMessage());
             }

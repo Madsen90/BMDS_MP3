@@ -14,7 +14,7 @@ public class Peer {
     public boolean newNetwork;
     public HashMap<Integer, String> data = new HashMap<>();
     public HashMap<Integer, String> backup = new HashMap<>();
-    public PriorityQueue<Integer> log = new PriorityQueue<>();
+    private PriorityQueue<Integer> log = new PriorityQueue<>();
     private int pulse;
     boolean isSending = false;
 
@@ -106,7 +106,7 @@ public class Peer {
         System.out.println("Message loop startet");
         Socket socket = null;
         try{
-            socket = new Socket("localhost", 1001);
+            socket = new Socket("130.226.142.243", 1001);
         
         }catch(Exception e){
 
@@ -153,6 +153,10 @@ public class Peer {
             }
         }
         log.add(x);
+    }
+
+    public synchronized boolean logContains(Integer x) {
+        return log.contains(x);
     }
 
     public int getListenPort(boolean left){
