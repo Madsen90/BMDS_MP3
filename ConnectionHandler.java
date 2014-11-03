@@ -76,6 +76,9 @@ public class ConnectionHandler extends Thread {
                     case Backup:
                         backup(message);
                         break;
+                    case DeleteBackup:
+                        deleteBackup(message);
+                        break;
                     default:
                         System.err.println("Fejl");
                         break;
@@ -120,8 +123,25 @@ public class ConnectionHandler extends Thread {
         }
     }
     private void backup(Message message){
-        peer.backup.put(message.getKey(),message.getContent());
+        int key = message.getKey();
+
+        peer.backup.put(key,message.getContent());
+
+        //delete possible redundant backup in my direction
+            try{
+                Message getmessage = new Message(CodeType.DeleteBackup, peer.data.get(key), peer.listenPort, key);
+                peer.getLink(direction).getOutputStream().write(getmessage.Serialize());
+            } catch (IOException e) {
+                System.out.println("failed to delete backup message: " + e.getMessage());
+            }
+
     }
+
+    private void deleteBackup(Message message) {
+        peer.backup.remove(message.getKey());
+        System.out.println("deleting backup");
+    }
+
     private void delete(Message message, boolean really){
         if(really){
             peer.data.remove(message.getKey());
