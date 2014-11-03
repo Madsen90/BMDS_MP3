@@ -12,7 +12,13 @@ public class Message implements Serializable{
 		5 = Success
                 6 = Heartbeat
                 7 = Panic
+		8 = Backup
 	*/
+        public enum CodeType{ // Unused, but could be useful
+            Error, Connecting, ConnectionEstablished, 
+            Put, Get, Success, Heartbeat, Panic, Backup
+        }
+        public static final String SEPERATOR = "#####";
 	private int code; 
 	private String content;
         private Socket sender;

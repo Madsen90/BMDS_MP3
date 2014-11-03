@@ -4,8 +4,6 @@
  * and open the template in the editor.
  */
 
-package bmds;
-
 /**
  *
  * @author Paw
@@ -18,5 +16,5 @@ public class Bmds {
     public static void main(String[] args) {
         // TODO code application logic here
     }
-    
+
 }
