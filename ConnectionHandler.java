@@ -52,7 +52,7 @@ public class ConnectionHandler extends Thread {
                     continue; 
 
                 }
-                peer.log.add(message.hashCode());
+                peer.addToLog(message.hashCode());
 
                 switch (message.getCode()) {
                     case Connecting:
@@ -164,7 +164,7 @@ public class ConnectionHandler extends Thread {
         System.out.println("Put " + message.getContent() + " at " + message.getKey());
 
         Message deletemessage = new Message(CodeType.Delete, message.getContent(), peer.listenPort, message.getKey());
-        peer.log.add(deletemessage.hashCode());
+        peer.addToLog(deletemessage.hashCode());
         delete(deletemessage,false);
 
         try{
