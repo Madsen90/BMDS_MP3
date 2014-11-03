@@ -61,9 +61,6 @@ public class ConnectionHandler extends Thread {
                         System.out.println("received panic message: " + message.getContent());
                         panic(message);
                         break;
-                    case PanicJoin:
-                        peerJoined(message, !direction);
-                        break;
                     case Backup:
                         backup(message);
                         break;
@@ -79,8 +76,9 @@ public class ConnectionHandler extends Thread {
 
             } else if (socket == peer.getLink(!direction)) { //if the right socket died
                 System.out.println("My right buddy, " + peer.getListenPort(!direction)  + ", died. I'm keeping it panicking.");
-                panic(new Message(CodeType.Panic, socket.getLocalAddress().getHostAddress(), peer.listenPort));
                 peer.setLink(!direction,null,-1);
+                panic(new Message(CodeType.Panic, socket.getLocalAddress().getHostAddress(), peer.listenPort));
+                
 
                 boolean failed = false;
                 for(Integer key : peer.backup.keySet()){
@@ -189,67 +187,73 @@ public class ConnectionHandler extends Thread {
                 DataOutputStream out = new DataOutputStream(socket.getOutputStream());
                 DataInputStream in = new DataInputStream(socket.getInputStream());
 
-                Socket s = peer.getLink(!direction);
-                Message m = new Message(CodeType.Connecting, s.getInetAddress().getHostAddress(), peer.getListenPort(!direction));
+                Socket s = peer.getLink(direction);
+                Message m = new Message(CodeType.Connecting, s.getInetAddress().getHostAddress(), peer.getListenPort(direction));
                 out.write(m.Serialize());
 
                 if(!leftIsRight)
-                    peer.getLink(!direction).close();
+                    peer.getLink(direction).close();
 
-                peer.setLink(!direction, socket, message.getPort());
+                peer.setLink(direction, socket, message.getPort());
+
+
 
 
             } catch (IOException e) {
                 System.out.println("Fejl her: " + e.toString());
             }
             peer.printInfo();
+
+            sendBackup();
         }
     }
 
-    private void peerJoined(Message message, boolean panic) {
-        peer.setLink(panic, socket, message.getPort());
+    private void peerJoined(Message message) {
+        peer.setLink(!direction, socket, message.getPort());
         peer.printInfo();
+    }
+
+    private void sendBackup() {
+        System.out.println("sending backup");
         for(Integer key : peer.data.keySet()){
             try{
                 Message getmessage = new Message(CodeType.Backup, peer.data.get(key), peer.listenPort, key);
-                peer.getLink(panic).getOutputStream().write(getmessage.Serialize());
+                peer.getLink(direction).getOutputStream().write(getmessage.Serialize());
             } catch (IOException e) {
                 System.out.println("failed to send backup message: " + e.getMessage());
             }
         }
+    }
 
-        System.out.println();
-        peer.printInfo();
-    }
-    private void peerJoined(Message message) {
-        peerJoined(message, direction);
-    }
 
     private void panic(Message message) {
         panic(message, 0);
     }
+
     //Called if the Peer loses connection to one of its connected peers
     //if left is missing. Panic! If right is missing, wait.
     private void panic(Message message, int count) {
 
         boolean actuallyNotNull = false;
-        try {
-            Socket next = peer.getLink(direction);
-            Socket testSocket = new Socket(socket.getInetAddress(), socket.getPort());
-            testSocket.close();
-        } catch(IOException e) {
-            actuallyNotNull = true;
-        }
+        // try {
+        //     Socket next = peer.getLink(direction);
+        //     Socket testSocket = new Socket(socket.getInetAddress(), socket.getPort());
+        //     testSocket.close();
+        // } catch(IOException e) {
+        //     System.out.println("fejler");
+        //     actuallyNotNull = true;
+        // }
 
-        if (peer.getLink(direction) == null || actuallyNotNull) { // TODO check if he is online
+        if (peer.getLink(direction) == null) { // TODO check if he is online
             try {
                 //Give the peer missing a left buddy, you as a left buddy.
-                Message m = new Message(CodeType.ConnectionEstablished, "I'm your new right friend.");
+                Message m = new Message(CodeType.ConnectionEstablished, "I'm your new right friend.", peer.listenPort);
                 Socket peerSocket = new Socket(InetAddress.getByName(message.getContent()), message.getPort());
                 peerSocket.getOutputStream().write(m.Serialize());
 
                 peer.setLink(direction, peerSocket, message.getPort());
                 new ConnectionHandler(peer, peerSocket).start();
+                sendBackup();
                 peer.printInfo();
             } catch (IOException e) {
                 System.out.println("Could not make the new connection to "+message.getContent()+":"+message.getPort());

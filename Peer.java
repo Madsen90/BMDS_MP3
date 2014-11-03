@@ -84,8 +84,8 @@ public class Peer {
                 //Message messageSucces = new Message(CodeType.ConnectionEstablished, "Connection Established");
                 //out.write(messageSucces.Serialize());
 
-                setLink(true, leftSocket, connectPort);
-                setLink(false, rightSocket, m.getPort());
+                setLink(false, leftSocket, connectPort);
+                setLink(true, rightSocket, m.getPort());
                 new ConnectionHandler(this, rightSocket).start();
             } else if (m.getCode() == CodeType.ConnectionEstablished) {
                 setLink(true, leftSocket, connectPort);
