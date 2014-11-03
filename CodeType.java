@@ -1,6 +1,6 @@
 public enum CodeType{
             Error, Connecting, ConnectionEstablished, 
-            Put, Get, Success, Heartbeat, Panic, Backup, Delete, PanicJoin
+            Put, Get, Success, Heartbeat, Panic, Backup, Delete, PanicJoin, DeleteBackup
         }
         	/*
 		-1 = Error
