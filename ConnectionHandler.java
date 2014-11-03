@@ -61,6 +61,9 @@ public class ConnectionHandler extends Thread {
                         System.out.println("received panic message: " + message.getContent());
                         panic(message);
                         break;
+                    case PanicJoin:
+                        peerJoined(message, !direction);
+                        break;
                     case Backup:
                         backup(message);
                         break;
@@ -71,11 +74,11 @@ public class ConnectionHandler extends Thread {
             }
         } catch (IOException ex) {
             if (socket == peer.getLink(direction)) { //if it is the left socket that died
-                System.out.println("My left buddy, " + peer.getListenPort(direction) + ", died. I'm panicking!!");
+                System.out.println("My left buddy, " + peer.getListenPort(direction) + ", died. I'm coolio !!");
                 peer.setLink(direction,null,-1);
 
             } else if (socket == peer.getLink(!direction)) { //if the right socket died
-                System.out.println("My right buddy, " + peer.getListenPort(!direction)  + ", died. I'm keeping it coolio.");
+                System.out.println("My right buddy, " + peer.getListenPort(!direction)  + ", died. I'm keeping it panicking.");
                 panic(new Message(CodeType.Panic, socket.getLocalAddress().getHostAddress(), peer.listenPort));
                 peer.setLink(!direction,null,-1);
 
@@ -192,15 +195,9 @@ public class ConnectionHandler extends Thread {
 
                 if(!leftIsRight)
                     peer.getLink(!direction).close();
-                // byte[] buffer = new byte[socket.getReceiveBufferSize()];
-                // int size = in.read(buffer);
 
-                //Message m2 = Message.Deserialize(buffer);
-
-                // if (m2.getCode() == CodeType.ConnectionEstablished) {
                 peer.setLink(!direction, socket, message.getPort());
-                //     //peer.rightListenPort = incommingListenPort;
-                // }
+
 
             } catch (IOException e) {
                 System.out.println("Fejl her: " + e.toString());
@@ -209,17 +206,23 @@ public class ConnectionHandler extends Thread {
         }
     }
 
-    private void peerJoined(Message message) {
-        peer.setLink(direction, socket, message.getPort());
+    private void peerJoined(Message message, boolean panic) {
+        peer.setLink(panic, socket, message.getPort());
         peer.printInfo();
         for(Integer key : peer.data.keySet()){
             try{
                 Message getmessage = new Message(CodeType.Backup, peer.data.get(key), peer.listenPort, key);
-                peer.getLink(direction).getOutputStream().write(getmessage.Serialize());
+                peer.getLink(panic).getOutputStream().write(getmessage.Serialize());
             } catch (IOException e) {
                 System.out.println("failed to send backup message: " + e.getMessage());
             }
         }
+
+        System.out.println();
+        peer.printInfo();
+    }
+    private void peerJoined(Message message) {
+        peerJoined(message, direction);
     }
 
     private void panic(Message message) {
@@ -247,6 +250,7 @@ public class ConnectionHandler extends Thread {
 
                 peer.setLink(direction, peerSocket, message.getPort());
                 new ConnectionHandler(peer, peerSocket).start();
+                peer.printInfo();
             } catch (IOException e) {
                 System.out.println("Could not make the new connection to "+message.getContent()+":"+message.getPort());
             }
