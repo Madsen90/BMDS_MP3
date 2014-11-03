@@ -164,7 +164,7 @@ public class ConnectionHandler extends Thread {
     }
 
     private void get(Message message) {
-        if (peer.data.containsKey(message.getKey())) { // TODO check if exists in backup
+        if (peer.data.containsKey(message.getKey())) { 
             System.out.println("Data here. Returning...");
             try {
                 Message getmessage = new Message(CodeType.Success, peer.data.get(message.getKey()));
