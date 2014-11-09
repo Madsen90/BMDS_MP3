@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.PriorityQueue;
 import java.util.LinkedList;
+import java.io.Console;
 
 public class Peer {
     private LinkedList<Message> messages = new LinkedList<>();
@@ -105,18 +106,21 @@ public class Peer {
     private void startMessageLoop(){
         System.out.println("Message loop startet");
         Socket socket = null;
-        try{
-            socket = new Socket("localhost", 1001);
+        /*try{
+            socket = new Socket("192.168.49.217", 1001);
         
         }catch(Exception e){
 
-        }
+        }*/
         
         MessageSender messageSender = null;
 
         while(true){
             if(!isSending){
-                if(!messages.isEmpty()){
+                Console console = System.console();
+                String s = console.readLine("Enter input:");
+                if(true){
+
                     System.out.println("Creating new message");
                     Message m = messages.getFirst();
                     isSending = true;
@@ -130,7 +134,7 @@ public class Peer {
             }else {
                 System.out.println("Still trying to send");
                 if(messageSender != null){
-                    messageSender.trySend = false;
+                   // messageSender.trySend = false;
                 }
             }
 
