@@ -9,7 +9,7 @@ import java.util.logging.Logger;
 
 public class Peer {
 
-    public static final boolean DEBUG = true;
+    public static final boolean DEBUG = false;
 
     private final MessageListener.Disconnect onDisconnect = new MessageListener.Disconnect() {
 
@@ -63,11 +63,12 @@ public class Peer {
             switch (message.getCode()) {
 
                 case Connecting:
+                    final Socket oriSocket = socket;
                     final MessageSender.Callback connectingDone = new MessageSender.Callback() {
                         @Override
                         public void action(Socket socket, boolean success) {
                             if (success) {
-                                setLink(false, socket, message.getPort());
+                                setLink(false, oriSocket, message.getPort());
                                 System.out.println("Accepted: " + message.getPort() + " as right buddy");
                                 printInfo();
                             }
@@ -84,13 +85,14 @@ public class Peer {
 
                 case PleaseConnect:
                     try {
-                        Socket s = new Socket(InetAddress.getByName(message.getContent()), message.getPort());
+                        final Socket s = new Socket(InetAddress.getByName(message.getContent()), message.getPort());
+                        
                         new MessageSender(new MessageSender.Callback() {
                             @Override
                             public void action(Socket socket, boolean success) {
                                 if(success){
-                                    new MessageListener(callback, onDisconnect, socket);
-                                    setLink(true, socket, message.getPort());
+                                    new MessageListener(callback, onDisconnect, s);
+                                    setLink(true, s, message.getPort());
                                     System.out.println("Connected my left buddy to: " + message.getPort());
                                     sendBackup();
                                     printInfo();
@@ -256,7 +258,7 @@ public class Peer {
         }
     }
 
-    public void printInfo() {
+    public synchronized void printInfo() {
         if (leftLink != null) {
             System.out.printf("LEFT: %d -> %d (%d)\n", leftLink.getLocalPort(), leftListenPort, leftLink.getPort());
         }
@@ -266,7 +268,7 @@ public class Peer {
         }
     }
 
-    public final void beginListening(int listenPort, final MessageListener.Callback callback) {
+    public synchronized final void beginListening(int listenPort, final MessageListener.Callback callback) {
         SocketHandler socketListener = new SocketHandler(listenPort, this, new SocketHandler.Callback() {
             @Override
             public void action(Peer peer, Socket source) {
@@ -291,15 +293,15 @@ public class Peer {
         return log.contains(x);
     }
 
-    public int getListenPort(boolean left) {
+    public synchronized int getListenPort(boolean left) {
         return (left) ? leftListenPort : rightListenPort;
     }
 
-    public Socket getLink(boolean left) {
+    public synchronized Socket getLink(boolean left) {
         return (left) ? leftLink : rightLink;
     }
 
-    public void setLink(boolean left, Socket s, int listenPort) {
+    public synchronized void setLink(boolean left, Socket s, int listenPort) {
         if (left) {
             /*if(leftLink != null) {
                 try {
