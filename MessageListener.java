@@ -35,6 +35,7 @@ public class MessageListener extends Thread {
                 } else {
                     if(Peer.DEBUG)System.out.println("Received: "+m+" from: "+socket.getPort());
                     callback.action(socket, m);
+                    // Send a message back with origin set
                 }
             }
         } catch (IOException ex) {
