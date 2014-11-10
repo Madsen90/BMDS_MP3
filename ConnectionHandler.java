@@ -58,7 +58,7 @@ public class ConnectionHandler extends Thread {
                     case Connecting:
                         handleConnect(message);
                         break;
-                    case ConnectionEstablished:
+                    case Connected:
                         peerJoined(message);
                         break;
                     case Put:
@@ -203,7 +203,7 @@ public class ConnectionHandler extends Thread {
             
             try {
                 DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-                Message m = new Message(CodeType.ConnectionEstablished, "Success", peer.listenPort);
+                Message m = new Message(CodeType.Connected, "Success", peer.listenPort);
                 out.write(m.Serialize());
                 peer.setLink(false, socket, message.getPort());
                 peer.setLink(true, socket, message.getPort());
@@ -282,7 +282,7 @@ public class ConnectionHandler extends Thread {
         if (peer.getLink(direction) == null) { // TODO check if he is online
             try {
                 //Give the peer missing a left buddy, you as a left buddy.
-                Message m = new Message(CodeType.ConnectionEstablished, "I'm your new right friend.", peer.listenPort);
+                Message m = new Message(CodeType.Connected, "I'm your new right friend.", peer.listenPort);
                 Socket peerSocket = new Socket(InetAddress.getByName(message.getContent()), message.getPort());
                 peerSocket.getOutputStream().write(m.Serialize());
 

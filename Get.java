@@ -32,8 +32,8 @@ public class Get {
 
             try {
                 Socket peerSocket = new Socket(peerAddress, peerPort);
-                Message getmessage = new Message(CodeType.Get, 
-                    peerSocket.getLocalAddress().getHostAddress(), serverSocket.getLocalPort(), key);
+                Message getmessage = new Message(CodeType.Get,
+                        peerSocket.getLocalAddress().getHostAddress(), serverSocket.getLocalPort(), key);
                 byte[] messageInBytes = getmessage.Serialize();
 
                 peerSocket.getOutputStream().write(messageInBytes);
@@ -42,7 +42,16 @@ public class Get {
             }
             System.out.println("Listening on: " + serverSocket.getLocalPort());
 
-            MessageListener mL = new MessageListener(serverSocket.accept());
+            MessageListener mL = new MessageListener(new MessageListener.Callback() {
+                @Override
+                public void action(Socket socket, Message message) {
+                    System.out.println(message.getContent());
+                }
+            }, new MessageListener.Disconnect() {
+                @Override
+                public void action(Socket socket) {
+                }
+            }, serverSocket.accept());
             mL.start();
         } catch (IOException ex) {
             System.err.println("Server socker exception: " + ex.getMessage());

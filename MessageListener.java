@@ -1,65 +1,49 @@
+
 import java.io.*;
 import java.net.*;
-public class MessageListener extends Thread
-    {
 
-        Socket socket;
+public class MessageListener extends Thread {
 
-        public MessageListener(Socket socket)
-        {
-            this.socket = socket;
-        }
+    private final Callback callback;
+    private final Disconnect disconnect;
+    private final Socket socket;
 
-        public void run()
-        {
-            System.out.println("messageListener Running...");
-            DataInputStream in = null;
+    public MessageListener(Callback callback, Disconnect disconnect, Socket socket) {
+        this.callback = callback;
+        this.socket = socket;
+        this.disconnect = disconnect;
+    }
 
-            try
-            {
-                in = new DataInputStream(socket.getInputStream());
-
+    @Override
+    public void run() {
+        try (DataInputStream in = new DataInputStream(socket.getInputStream())) {
+            if(Peer.DEBUG)System.out.println("Listening at: "+socket.getPort());
+            while (true) {
                 byte[] buffer = new byte[socket.getReceiveBufferSize()];
                 int size = in.read(buffer);
 
-                if (size == -1)
-                {
-                    in.close();
-                    System.out.println("Source closed " + socket.getInetAddress() + " - " + socket.getPort());
-                    return;
+                if (size == -1) {
+                    System.out.println("Socket closed " + socket.getInetAddress() + " - " + socket.getPort());
+                    break;
                 }
+                Message m = Message.Deserialize(buffer);
+                if(Peer.DEBUG)System.out.println("Received: "+m+" from: "+socket.getPort());
 
-                Message message = Message.Deserialize(buffer);
-
-                switch(message.getCode()){
-                    case Error : 
-                        System.out.println("Error from peer - most likely no result in cloud");
-                        break;
-                    case Success : 
-                        System.out.println("Success! Value of key is: " + message.getContent());
-                        break;
-                    default :
-                        System.out.println("Error - Unknown code returned: " + message.getCode() + " - message content is: " + message.getContent());
-                        break;
-                    
-                }
-                
-                socket.close();
-            } catch (IOException ex)
-            {
-                if (in != null)
-                {
-                    try
-                    {
-                        socket.close();
-                    } catch (IOException e)
-                    {
-                        System.out.println("Couldn't close socket: " + e);
-                    }
-                }
-
-                System.err.println("TCP: IO Error: " + ex.getMessage());
+                callback.action(socket, m);
             }
+        } catch (IOException ex) {
+            System.err.println(ex.getMessage());
+        } finally {
+            disconnect.action(socket);
         }
-
     }
+
+    public interface Callback {
+
+        public void action(Socket socket, Message message);
+    }
+    
+    public interface Disconnect {
+        public void action(Socket socket);
+    }
+}

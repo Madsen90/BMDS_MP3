@@ -6,26 +6,28 @@ public class SocketHandler extends Thread {
 
     private Peer peer;
     private int port;
-    private SocketHandlerCallback socketHandlerCallback;
+    private Callback callback;
 
-    public SocketHandler(int port, Peer peer, SocketHandlerCallback socketHandlerCallback) {
+    public SocketHandler(int port, Peer peer, Callback socketHandlerCallback) {
         this.port = port;
         this.peer = peer;
-        this.socketHandlerCallback = socketHandlerCallback;
+        this.callback = socketHandlerCallback;
     }
 
     @Override
     public void run() {
-        System.out.println("SocketHandler Running: " + port);
+        System.out.println("Listening on: " + port);
         while (true) {
             try (ServerSocket serverSocket = new ServerSocket(port)) {
-                System.out.println("Listening on: " + port);
                 Socket source = serverSocket.accept();
-                socketHandlerCallback.action(peer, source);
-
+                callback.action(peer, source);
             } catch (IOException ex) {
-                System.err.println("TCP: IdO Error:" + ex.getMessage());
+                System.err.println(ex.getMessage());
             }
         }
     }
+    
+    public interface Callback{
+	public void action(Peer peer, Socket source);
+}
 }
