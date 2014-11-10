@@ -13,7 +13,7 @@ public class TestPeer{
 		try{
 			socket = new ServerSocket(1001);
 			Socket socket2 = socket.accept();
-
+			socket2.setSoTimeout(1000);
 			while(true){
 				DataInputStream in = new DataInputStream(socket2.getInputStream());
 

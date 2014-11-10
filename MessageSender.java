@@ -2,35 +2,23 @@ import java.net.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
 
-public class MessageSender extends Thread{
-	Message m;
-	MessageSenderCallback messageSenderCallback;
-	public boolean trySend = true;
-	Socket socket;
+public class MessageSender{
+	public static void Send(Message message, Socket socket) throws IOException{
+		int hashCode = message.hashCode();
+		socket.getOutputStream().write(message.Serialize());
+		socket.setSoTimeout(2000);
 
-	public MessageSender(MessageSenderCallback messageSenderCallback, Socket s, Message m){
-		this.m = m;
-		this.messageSenderCallback = messageSenderCallback;
-		socket = s;
-		start();
+		byte[] buffer = new byte[socket.getReceiveBufferSize()];
+        int size = socket.getInputStream().read(buffer);
+
+        if (size == -1) {
+       //     throw new Exception();
+        }
+
+        Message replyMessage = Message.Deserialize(buffer);
+        if (replyMessage.hashCode() != hashCode){
+        //	throw new Exception();
+        }
 	}
-	
-	@Override
-    public void run() {
-    	System.out.println("Trying to send");
-		try{
-			DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
-            outputStream.write(m.Serialize());
-			messageSenderCallback.action();
-			return;
-		}catch(Exception e){
-			System.out.println("Sending failed");
-		}
-
-    }
-
 }

@@ -8,8 +8,8 @@ import java.util.LinkedList;
 import java.io.Console;
 
 public class Peer {
-    private LinkedList<Message> messages = new LinkedList<>();
     private Socket leftLink, rightLink;
+    private long leftReplyTime, rightReplyTime;
     private int leftListenPort = -1, rightListenPort = -1; 
     public int listenPort;
     public boolean newNetwork;
@@ -21,15 +21,10 @@ public class Peer {
 
     //Starting new network constructor
     public Peer(int listenPort) {
-        messages.add(new Message(CodeType.Success, "Please virker"));
-
-        startMessageLoop();
-
-/*        newNetwork = true;
+        newNetwork = true;
         this.listenPort = listenPort;
         beginListening(listenPort);
-        printInfo();*/
-
+        printInfo();
     }
 
     //Connecting to existing network
@@ -62,9 +57,6 @@ public class Peer {
                 Message joinMessage = new Message(CodeType.ConnectionEstablished, "Joined network", listenPort);
                 joinOut.write(joinMessage.Serialize());
 
-                //Message messageSucces = new Message(CodeType.ConnectionEstablished, "Connection Established");
-                //out.write(messageSucces.Serialize());
-
                 setLink(false, leftSocket, connectPort);
                 setLink(true, rightSocket, m.getPort());
                 new ConnectionHandler(this, rightSocket).start();
@@ -93,6 +85,9 @@ public class Peer {
     }
 
     public void beginListening(int listenPort) {
+        leftReplyTime = System.currentTimeMillis();
+        rightReplyTime = System.currentTimeMillis();
+
         SocketHandler connectionListener = new SocketHandler(listenPort, this, new SocketHandlerCallback() {
             public void action(Peer peer, Socket source) {
                 new ConnectionHandler(peer, source).start();
@@ -100,54 +95,6 @@ public class Peer {
         });
 
         connectionListener.start();
-        startMessageLoop();
-    }
-
-    private void startMessageLoop(){
-        System.out.println("Message loop startet");
-        Socket socket = null;
-        /*try{
-            socket = new Socket("192.168.49.217", 1001);
-        
-        }catch(Exception e){
-
-        }*/
-        
-        MessageSender messageSender = null;
-
-        while(true){
-            if(!isSending){
-                Console console = System.console();
-                String s = console.readLine("Enter input:");
-                if(true){
-
-                    System.out.println("Creating new message");
-                    Message m = messages.getFirst();
-                    isSending = true;
-                    messageSender = new MessageSender(new MessageSenderCallback(){
-                        public void action(){
-                            finishedSending();
-
-                        }
-                    }, socket, m);
-                }
-            }else {
-                System.out.println("Still trying to send");
-                if(messageSender != null){
-                   // messageSender.trySend = false;
-                }
-            }
-
-            try{
-                Thread.sleep(1000);
-            }catch(Exception e){
-
-            }
-        }
-    }
-
-    public synchronized void finishedSending(){
-        isSending = false;
     }
 
     public synchronized void addToLog(Integer x) {
@@ -177,8 +124,14 @@ public class Peer {
         }
     }
 
-    public synchronized void addMessage(Message message){
-        messages.add(message);
+    public synchronized void updateTime(Socket s){
+        if(s == leftLink){
+            leftReplyTime = System.currentTimeMillis();
+            System.out.println("Left time : " + leftReplyTime);
+        }else if(s == rightLink){
+            rightReplyTime = System.currentTimeMillis();
+            System.out.println("Right time : " + rightReplyTime);
+        }
     }
 
     public int getPulse() {
@@ -186,8 +139,7 @@ public class Peer {
     }
 
     public static void main(String[] args) {
-        new Peer(-1);
-        /*int listenPort = 0;
+        int listenPort = 0;
 
         try {
             listenPort = Integer.parseInt(args[0]);
@@ -208,6 +160,6 @@ public class Peer {
             } catch (Exception e) {
                 System.out.println("More errors");
             }
-        }*/
+        }
     }
 }

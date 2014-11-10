@@ -1,4 +1,3 @@
-
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.*;
@@ -6,7 +5,6 @@ import java.net.*;
 public class Get {
 
     public static void main(String[] args) {
-
         try {
             if (args.length > 3) {
                 throw new ArrayIndexOutOfBoundsException();
