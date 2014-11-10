@@ -6,7 +6,8 @@ import java.io.IOException;
 public class ConnectionHandler extends Thread {
     private final Peer peer;        // Peer running ConnectionHandler
     private final Socket socket;    // A socket the Peer receives messages on
-
+    private final int pulseTime = 4000;
+    private boolean keepThreadRunning = true;
     public static final boolean direction = true; // The direction of get, backup, delete, and panic in. Everything.
 
     public ConnectionHandler(Peer peer, Socket socket) {
@@ -22,7 +23,7 @@ public class ConnectionHandler extends Thread {
             in = new DataInputStream(socket.getInputStream());
             System.out.println("Listening to new source");
 
-            while (true) {
+            while (keepThreadRunning) {
                 byte[] buffer = new byte[socket.getReceiveBufferSize()];
                 int size = in.read(buffer);
 
@@ -34,6 +35,8 @@ public class ConnectionHandler extends Thread {
 
                 Message message = Message.Deserialize(buffer);
                 System.out.println("Received: " + message);
+
+                peer.updateTime(socket);
 
                 if(peer.log.contains(message.hashCode())){
                     if(message.getCode() == CodeType.Get) {
@@ -52,8 +55,6 @@ public class ConnectionHandler extends Thread {
                 }
 
                 peer.addToLog(message.hashCode());
-
-                peer.updateTime(socket);
 
                 switch (message.getCode()) {
                     case Connecting:
@@ -110,11 +111,13 @@ public class ConnectionHandler extends Thread {
                 if(!failed){
                     peer.backup.clear();
                 }
+            }else{
+                System.out.println("P'lsemad");
             }
 
             if (in != null) {
                 try {
-                    System.out.println("Closing socket");
+                    System.out.println("Closing socke 2222t");
                     socket.close();
                 } catch (IOException e) {
                     System.out.println("Couldn't close socket: " + e);
@@ -252,48 +255,57 @@ public class ConnectionHandler extends Thread {
         }
     }
 
-
-    private void panic(Message message) {
-        panic(message, 0);
-    }
-
     //Called if the Peer loses connection to one of its connected peers
     //if left is missing. Panic! If right is missing, wait.
-    private void panic(Message message, int count) {
-        boolean actuallyNotNull = false;
+    private void panic(Message message) {
+        Socket rightSocket = peer.getLink(!direction);
+        Socket leftSocket = peer.getLink(direction);
 
-        if (peer.getLink(direction) == null) { // TODO check if he is online
+        if(rightSocket != null){
+            try{
+                Message replyHeartbeat = new Message(CodeType.Heartbeat, "Panic callback");
+                rightSocket.getOutputStream().write(replyHeartbeat.Serialize());
+            } catch (IOException e) {
+                System.out.println("Could not make the new connection to "+message.getContent()+":"+message.getPort());
+            }
+        }
+
+        if (leftSocket == null) { // TODO check if he is online
             try {
                 //Give the peer missing a left buddy, you as a left buddy.
                 Message m = new Message(CodeType.ConnectionEstablished, "I'm your new right friend.", peer.listenPort);
-                Socket peerSocket = new Socket(InetAddress.getByName(message.getContent()), message.getPort());
+                leftSocket = new Socket(InetAddress.getByName(message.getContent()), message.getPort());
                 
-                peerSocket.getOutputStream().write(m.Serialize());
+                leftSocket.getOutputStream().write(m.Serialize());
 
-                peer.setLink(direction, peerSocket, message.getPort());
-                new ConnectionHandler(peer, peerSocket).start();
+                peer.setLink(direction, leftSocket, message.getPort());
+                new ConnectionHandler(peer, leftSocket).start();
                 sendBackup();
                 peer.printInfo();
+                keepThreadRunning = false;
+                
             } catch (IOException e) {
                 System.out.println("Could not make the new connection to "+message.getContent()+":"+message.getPort());
             }
         } else {
             try {
-                MessageSender.Send(message, peer.getLink(direction));
-            } catch (IOException e) {
-                System.out.println("I was unable to pass on a panic signal to " +peer.getListenPort(direction));
+                leftSocket.getOutputStream().write(message.Serialize());
+                long curTime = System.currentTimeMillis(); 
 
-                if(count < 4) {
-                    System.out.println("Retrying...");
-                    try {
-                        Thread.sleep(2000, count+1);
-                    } catch(InterruptedException ex){
-                        System.err.println("ERROR!!");
-                    }
+                Thread.sleep(pulseTime);
+
+                if(peer.getUpdateTime(direction) < curTime){
+                    System.out.println("Dårligt tilfælde");
+                    leftSocket.close();
+                    peer.setLink(direction, null, -1);
                     panic(message);
-                } else {
-                    System.out.println("Retried too many times... I don't know what to do.");
                 }
+                System.out.println("Godt tilfælde");
+
+            } catch (IOException e){
+              
+            } catch (Exception e){
+                //Jeg er et dårligt menneske
             }
         }
     }

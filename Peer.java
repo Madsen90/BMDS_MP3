@@ -128,10 +128,15 @@ public class Peer {
         if(s == leftLink){
             leftReplyTime = System.currentTimeMillis();
             System.out.println("Left time : " + leftReplyTime);
-        }else if(s == rightLink){
+        }
+        if(s == rightLink){
             rightReplyTime = System.currentTimeMillis();
             System.out.println("Right time : " + rightReplyTime);
         }
+    }
+
+    public long getUpdateTime(boolean direction){
+        return (direction) ? leftReplyTime : rightReplyTime;
     }
 
     public int getPulse() {

@@ -13,7 +13,7 @@ public class MessageSender{
         int size = socket.getInputStream().read(buffer);
 
         if (size == -1) {
-       //     throw new Exception();
+        
         }
 
         Message replyMessage = Message.Deserialize(buffer);
