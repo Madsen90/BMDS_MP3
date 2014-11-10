@@ -7,11 +7,13 @@ public class MessageListener extends Thread {
     private final Callback callback;
     private final Disconnect disconnect;
     private final Socket socket;
+    private final MessageDelivery delivery;
 
-    public MessageListener(Callback callback, Disconnect disconnect, Socket socket) {
+    public MessageListener(Callback callback, Disconnect disconnect, Socket socket, MessageDelivery delivery) {
         this.callback = callback;
         this.socket = socket;
         this.disconnect = disconnect;
+        this.delivery = delivery;
     }
 
     @Override
@@ -27,9 +29,13 @@ public class MessageListener extends Thread {
                     break;
                 }
                 Message m = Message.Deserialize(buffer);
-                if(Peer.DEBUG)System.out.println("Received: "+m+" from: "+socket.getPort());
 
-                callback.action(socket, m);
+                if(m.getOrigin() != -1){
+                    delivery.process(m);
+                } else {
+                    if(Peer.DEBUG)System.out.println("Received: "+m+" from: "+socket.getPort());
+                    callback.action(socket, m);
+                }
             }
         } catch (IOException ex) {
             System.err.println(ex.getMessage());

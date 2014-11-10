@@ -11,6 +11,7 @@ public class Message implements Serializable {
     private String content;
     private int key = -1;
     private int port = -1;
+    private int origin = -1;
     private Date time = new Date();
 
     public Message(CodeType code, String content) {
@@ -26,6 +27,10 @@ public class Message implements Serializable {
     public Message(CodeType code, String content, int port, int key) {
         this(code, content, port);
         this.key = key;
+    }
+
+    public void setOrigin(Message message){
+        origin = message.hashCode();
     }
 
     public int getPort() {
@@ -44,6 +49,10 @@ public class Message implements Serializable {
         return content;
     }
 
+    public int getOrigin() {
+        return origin;
+    }
+
     public byte[] Serialize() {
         try {
             byte[] bytes = null;
@@ -60,7 +69,7 @@ public class Message implements Serializable {
 
     @Override
     public int hashCode() {
-        return key * port * content.hashCode() * time.hashCode();
+        return key * port * content.hashCode() * time.hashCode() * origin;
     }
 
     public static Message Deserialize(byte[] b) {

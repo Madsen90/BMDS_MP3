@@ -51,7 +51,7 @@ public class Get {
                 @Override
                 public void action(Socket socket) {
                 }
-            }, serverSocket.accept());
+            }, serverSocket.accept(), new MessageDelivery(null));
             mL.start();
         } catch (IOException ex) {
             System.err.println("Server socker exception: " + ex.getMessage());

@@ -24,22 +24,14 @@ public class Peer {
                 setLink(false, null, -1);
                 panic(new Message(CodeType.Panic, socket.getLocalAddress().getHostAddress(), listenPort));
 
-                boolean failed = false;
                 for (Integer key : backup.keySet()) {
-                    try {
-                        data.put(key, backup.get(key));
-                        Message getmessage = new Message(CodeType.Backup, data.get(key), listenPort, key);
-                        getLink(true).getOutputStream().write(getmessage.Serialize());
-                    } catch (IOException e) {
-                        System.out.println("failed to send backup message: " + e.getMessage());
-                        failed = true;
-                    }
+                    data.put(key, backup.get(key));
+                    Message getmessage = new Message(CodeType.Backup, data.get(key), listenPort, key);
+                    sendMessage(getLink(true), getmessage, null);
                 }
-                if (!failed) {
-                    backup.clear();
-                }
+                backup.clear();
             }
-            System.err.println("Stupid Connection Closed: " + socket.getPort());
+            System.err.println("Connection Closed: " + socket.getPort());
         }
     };
     private final MessageListener.Callback callback = new MessageListener.Callback() {
@@ -50,7 +42,7 @@ public class Peer {
                     System.out.println("Get not found. Returning...");
                     try {
                         Message returnMessage = new Message(CodeType.Failure, "Value not found");
-                        new MessageSender(null, new Socket(InetAddress.getByName(message.getContent()), message.getPort()), returnMessage);
+                        sendMessage(new Socket(InetAddress.getByName(message.getContent()), message.getPort()), returnMessage, null);
                     } catch (IOException e) {
                         System.out.println("Failed to respond to get request: " + e.getMessage());
                     }
@@ -76,8 +68,7 @@ public class Peer {
                     };
 
                     if (getLink(false) != null) {
-                        new MessageSender(connectingDone, getLink(false),
-                                new Message(CodeType.PleaseConnect, socket.getInetAddress().getHostAddress(), message.getPort()));
+                        sendMessage(getLink(false), new Message(CodeType.PleaseConnect, socket.getInetAddress().getHostAddress(), message.getPort()), connectingDone);
                     } else {
                         connectingDone.action(socket, true);
                     }
@@ -87,11 +78,12 @@ public class Peer {
                     try {
                         final Socket s = new Socket(InetAddress.getByName(message.getContent()), message.getPort());
                         
-                        new MessageSender(new MessageSender.Callback() {
+                        sendMessage(s, new Message(CodeType.Connected, "I am here", listenPort),
+                            new MessageSender.Callback() {
                             @Override
                             public void action(Socket socket, boolean success) {
                                 if(success){
-                                    new MessageListener(callback, onDisconnect, s);
+                                    new MessageListener(callback, onDisconnect, s, delivery);
                                     setLink(true, s, message.getPort());
                                     System.out.println("Connected my left buddy to: " + message.getPort());
                                     sendBackup();
@@ -100,7 +92,7 @@ public class Peer {
                                     System.out.println("Failure");
                                 }
                             }
-                        }, s, new Message(CodeType.Connected, "I am here", listenPort));
+                        });
                     } catch (IOException ex) {
                         Logger.getLogger(Peer.class.getName()).log(Level.SEVERE, null, ex);
                     }
@@ -131,6 +123,8 @@ public class Peer {
         }
     };
 
+    private MessageDelivery delivery;
+
     private LinkedList<Message> messages = new LinkedList<>();
     private Socket leftLink, rightLink;
     private int leftListenPort = -1, rightListenPort = -1;
@@ -144,26 +138,23 @@ public class Peer {
     public Peer(final int listenPort, String connectAddress, int connectPort) {
         this.listenPort = listenPort;
 
+        delivery = new MessageDelivery(this);
+        delivery.start();
         beginListening(listenPort, callback);
 
         try {
             setLink(true, new Socket(connectAddress, connectPort), connectPort);
-            new MessageListener(callback, onDisconnect, leftLink).start();
+            new MessageListener(callback, onDisconnect, leftLink, delivery).start();
         } catch (IOException ex) {
             System.err.println("Could not connect: " + ex.getMessage());
             return;
         }
 
-        new MessageSender(new MessageSender.Callback() {
+        sendMessage( getLink(true), new Message(CodeType.Connecting, "HELLO", listenPort), null);
+    }
 
-            @Override
-            public void action(Socket socket, boolean success) {
-                if (!success) {
-                    System.out.println("Could not hello. Retrying...");
-                    new MessageSender(this, getLink(true), new Message(CodeType.Connecting, "Yay!", listenPort));
-                }
-            }
-        }, getLink(true), new Message(CodeType.Connecting, "HELLO", listenPort));
+    public synchronized void sendMessage(Socket socket, Message message, final MessageSender.Callback callback){
+        delivery.enqueue(socket,message, callback);
     }
 
     private void put(Message message) {
@@ -175,7 +166,7 @@ public class Peer {
         addToLog(deleteMessage.hashCode());
         delete(deleteMessage, false);
 
-        new MessageSender(null, getLink(true), new Message(CodeType.Backup, message.getContent(), listenPort, message.getKey()));
+        sendMessage(getLink(true), new Message(CodeType.Backup, message.getContent(), listenPort, message.getKey()), null);
     }
 
     private void get(Message message) {
@@ -184,13 +175,13 @@ public class Peer {
             try {
                 Socket peerSocket = new Socket(InetAddress.getByName(message.getContent()), message.getPort());
                 Message returnMessage = new Message(CodeType.Success, data.get(message.getKey()), listenPort, message.getKey());
-                new MessageSender(null, peerSocket, returnMessage);
+                sendMessage(peerSocket, returnMessage, null);
             } catch (IOException e) {
                 System.out.println("Failed to respond to get request: " + e.getMessage());
             }
         } else {
             System.out.println("Data not here. Forwarding..");
-            new MessageSender(null, getLink(true), message);
+            sendMessage(getLink(true), message, null);
         }
     }
 
@@ -198,7 +189,7 @@ public class Peer {
         System.out.println("Sending backup...");
         for (Integer key : data.keySet()) {
             Message backupMessage = new Message(CodeType.Backup, data.get(key), listenPort, key);
-            new MessageSender(null, getLink(true), backupMessage);
+            sendMessage(getLink(true), backupMessage, null);
         }
     }
 
@@ -213,7 +204,7 @@ public class Peer {
             System.out.println("Removed key: " + message.getKey());
         }
 
-        new MessageSender(null, getLink(true), message);
+        sendMessage(getLink(true), message, null);
     }
 
     private void panic(final Message message) {
@@ -235,26 +226,26 @@ public class Peer {
                 //Give the peer missing a left buddy, you as a left buddy.
                 Socket peerSocket = new Socket(InetAddress.getByName(message.getContent()), message.getPort());
                 Message m = new Message(CodeType.Connected, "I'm your new right friend.", listenPort);
-                new MessageSender(connectCallback, peerSocket, m);
+                sendMessage(peerSocket, m, connectCallback);
 
             } catch (IOException e) {
                 System.out.println("Could not make the new connection to " + message.getContent() + ":" + message.getPort());
             }
         } else {
-            new MessageSender(new MessageSender.Callback() {
+            sendMessage(getLink(true),message, new MessageSender.Callback() {
                 @Override
                 public void action(Socket socket, boolean success) {
                     if (!success) {
                         try {
                             Socket peerSocket = new Socket(InetAddress.getByName(message.getContent()), message.getPort());
                             Message m = new Message(CodeType.Connected, "I'm your new right friend.", listenPort);
-                            new MessageSender(connectCallback, peerSocket, m);
+                            sendMessage(peerSocket, m, connectCallback);
                         } catch (IOException ex) {
                             Logger.getLogger(Peer.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     }
                 }
-            }, getLink(true), message);
+            });
         }
     }
 
@@ -273,7 +264,7 @@ public class Peer {
             @Override
             public void action(Peer peer, Socket source) {
                 System.out.println("New Connection From: " + source.getInetAddress() + ":" + source.getPort());
-                new MessageListener(callback, onDisconnect, source).start();
+                new MessageListener(callback, onDisconnect, source, delivery).start();
             }
         });
 
