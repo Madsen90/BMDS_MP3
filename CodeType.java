@@ -1,5 +1,5 @@
 public enum CodeType{
-            Error, Connecting, ConnectionEstablished, 
+            Error, Connecting, ConnectionEstablished, PleaseConnect,
             Put, Get, Success, Heartbeat, Panic, Backup, Delete, PanicJoin, DeleteBackup
         }
         	/*
@@ -9,7 +9,7 @@ public enum CodeType{
 		3 = Put
 		4 = Get
 		5 = Success
-                6 = Heartbeat
-                7 = Panic
+        6 = Heartbeat
+        7 = Panic
 		8 = Backup
 	*/

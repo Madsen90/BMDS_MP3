@@ -20,14 +20,13 @@ public class Peer {
 
     //Starting new network constructor
     public Peer(int listenPort) {
+        Runtime.getRuntime().addShutdownHook(new ShutdownNicening(this));
         messages.add(new Message(CodeType.Success, "Please virker"));
 
-        startMessageLoop();
-
-/*        newNetwork = true;
+        newNetwork = true;
         this.listenPort = listenPort;
         beginListening(listenPort);
-        printInfo();*/
+        printInfo();
 
     }
 
@@ -99,48 +98,9 @@ public class Peer {
         });
 
         connectionListener.start();
-        startMessageLoop();
     }
 
-    private void startMessageLoop(){
-        System.out.println("Message loop startet");
-        Socket socket = null;
-        try{
-            socket = new Socket("130.226.142.243", 1001);
-        
-        }catch(Exception e){
-
-        }
-        
-        MessageSender messageSender = null;
-
-        while(true){
-            if(!isSending){
-                if(!messages.isEmpty()){
-                    System.out.println("Creating new message");
-                    Message m = messages.getFirst();
-                    isSending = true;
-                    messageSender = new MessageSender(new MessageSenderCallback(){
-                        public void action(){
-                            finishedSending();
-
-                        }
-                    }, socket, m);
-                }
-            }else {
-                System.out.println("Still trying to send");
-                if(messageSender != null){
-                    messageSender.trySend = false;
-                }
-            }
-
-            try{
-                Thread.sleep(1000);
-            }catch(Exception e){
-
-            }
-        }
-    }
+   
 
     public synchronized void finishedSending(){
         isSending = false;
@@ -186,8 +146,8 @@ public class Peer {
     }
 
     public static void main(String[] args) {
-        new Peer(-1);
-        /*int listenPort = 0;
+        //new Peer(-1);
+        int listenPort = 0;
 
         try {
             listenPort = Integer.parseInt(args[0]);
@@ -208,6 +168,6 @@ public class Peer {
             } catch (Exception e) {
                 System.out.println("More errors");
             }
-        }*/
+        }
     }
 }

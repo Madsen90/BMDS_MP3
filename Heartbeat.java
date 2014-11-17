@@ -10,17 +10,18 @@ public class Heartbeat extends Thread {
 	public Heartbeat(Socket socket, Peer peer, long Pulse){
 		this.socket = socket;
 		this.peer = peer;
+        this.pulse = pulse;
 	}
 		
 	@Override
 	public void run() {
 		System.out.println("Heart is beating");
-                try {
-		while(true){
-                    heartbeat(socket);
-                    this.sleep(pulse);
-	    }
-                } catch (Exception e) {
+        try {
+            while(true){
+                heartbeat(socket);
+                this.sleep(pulse);
+                }
+            } catch (Exception e) {
                     
                 }
 	}*/
@@ -33,7 +34,7 @@ public class Heartbeat extends Thread {
 /*        private void heartbeat(Socket socket) {
                 try{
                     DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-                    Message m = new Message(6, peer.listenPort + " is still alive");
+                    Message m = new Message(CodeType.Heartbeat, peer.listenPort + " is still alive");
                     
                     out.write(m.Serialize());
 		}catch(IOException e){

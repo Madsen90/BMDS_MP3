@@ -61,6 +61,9 @@ public class ConnectionHandler extends Thread {
                     case ConnectionEstablished:
                         peerJoined(message);
                         break;
+                    case PleaseConnect:
+                        System.out.println("I've been asked to connect to: "+ message.getContent() +":" + message.getPort());
+                        break;
                     case Put:
                         put(message);
                         break;
